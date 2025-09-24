@@ -1,0 +1,9 @@
+transformers
+torch
+boto3
+psycopg2-binary
+fastapi
+uvicorn[standard]
+pydantic
+openai
+python-dotenv
