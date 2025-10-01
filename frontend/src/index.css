@@ -1,0 +1,461 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* AI Impact Atlas Design System - Keep AI Safe Brand Colors
+All colors MUST be HSL for consistency.
+Brand Colors: GOLD, SUNRISE, SALMON, FIRE, ROSE
+*/
+
+@layer base {
+  :root {
+    /* Dark theme base colors - Black background */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Keep AI Safe Brand Colors */
+    /* GOLD: #FFD836 - Primary brand color */
+    --primary: 49 100% 59%;
+    --primary-foreground: 0 0% 7%;
+
+    /* SUNRISE: #FFAD40 - Secondary accent */
+    --secondary: 35 100% 62%;
+    --secondary-foreground: 0 0% 7%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 35 100% 62%;
+    --accent-foreground: 0 0% 7%;
+
+    /* FIRE: #F25C51 - Critical/Destructive actions */
+    --destructive: 4 86% 76%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* SALMON: #F47C6C - Warning states */
+    --warning: 8 87% 77%;
+    --warning-foreground: 0 0% 7%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 49 100% 59%;
+
+    --radius: 0.5rem;
+
+    /* Keep AI Safe themed dashboard colors */
+    /* Death incidents - FIRE color */
+    --death-incidents: 4 86% 76%;
+    /* Accident incidents - SALMON color */
+    --accident-incidents: 8 87% 77%;
+    /* Financial loss - ROSE color */
+    --financial-loss: 343 82% 71%;
+
+    /* Map and data visualization - Dark theme */
+    --map-background: 0 0% 8%;
+    --map-water: 215 25% 15%;
+    --map-land: 0 0% 12%;
+
+    /* Status indicators using Keep AI Safe colors */
+    --status-active: 49 100% 59%;
+    /* GOLD */
+    --status-inactive: 0 0% 40%;
+    --status-critical: 4 86% 76%;
+    /* FIRE */
+
+    /* Keep AI Safe Brand Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(49 100% 59%), hsl(35 100% 62%));
+    /* GOLD to SUNRISE */
+    --gradient-critical: linear-gradient(135deg, hsl(4 86% 76%), hsl(343 82% 71%));
+    /* FIRE to ROSE */
+    --gradient-warning: linear-gradient(135deg, hsl(8 87% 77%), hsl(35 100% 62%));
+    /* SALMON to SUNRISE */
+
+    /* Brand-themed shadows and effects */
+    --shadow-primary: 0 4px 20px hsl(49 100% 59% / 0.3);
+    /* GOLD shadow */
+    --shadow-critical: 0 4px 20px hsl(4 86% 76% / 0.3);
+    /* FIRE shadow */
+    --shadow-card: 0 2px 10px hsl(0 0% 0% / 0.5);
+
+    /* Typography weights */
+    --font-light: 300;
+    --font-normal: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 49 100% 59%;
+    /* GOLD for sidebar primary */
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 49 100% 59%;
+    /* GOLD ring */
+  }
+
+  .dark {
+    /* Dark theme base colors */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Keep AI Safe Brand Colors for dark theme */
+    --primary: 49 100% 59%;
+    /* GOLD */
+    --primary-foreground: 0 0% 7%;
+
+    --secondary: 35 100% 62%;
+    /* SUNRISE */
+    --secondary-foreground: 0 0% 7%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 35 100% 62%;
+    /* SUNRISE */
+    --accent-foreground: 0 0% 7%;
+
+    --destructive: 4 86% 76%;
+    /* FIRE */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 15%;
+    --ring: 49 100% 59%;
+    /* GOLD ring */
+
+    /* Dark theme sidebar */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 49 100% 59%;
+    /* GOLD for dark sidebar too */
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 49 100% 59%;
+    /* GOLD ring */
+
+    /* Dark theme map and visualization */
+    --map-background: 0 0% 8%;
+    --map-water: 215 25% 15%;
+    --map-land: 0 0% 12%;
+    --status-inactive: 0 0% 40%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-secondary;
+  }
+
+  /* Typography System - Aleo (Primary) & Sweet Sans Pro (Secondary) */
+
+  /* Header Styles - Custom Typography Specifications */
+
+  /* H1: Aleo/Bold - Gold */
+  h1 {
+    @apply font-primary font-bold text-4xl lg:text-5xl leading-tight text-gold;
+  }
+
+  /* H2: Aleo/Regular - Sunrise */
+  h2 {
+    @apply font-primary font-normal text-3xl lg:text-4xl leading-tight text-sunrise;
+  }
+
+  /* H3: Sweet Sans/Bold/All Caps - Salmon */
+  h3 {
+    @apply font-secondary font-bold text-2xl lg:text-3xl leading-snug uppercase text-salmon;
+  }
+
+  /* H4: Sweet Sans/Bold - Fire */
+  h4 {
+    @apply font-secondary font-bold text-xl lg:text-2xl leading-snug text-fire;
+  }
+
+  /* H5: Sweet Sans/Italic - Rose */
+  h5 {
+    @apply font-secondary font-normal italic text-lg lg:text-xl leading-normal text-rose;
+  }
+
+  /* H6: Sweet Sans/Medium/All Caps */
+  h6 {
+    @apply font-secondary font-medium text-base lg:text-lg leading-normal uppercase;
+  }
+
+  /* Body text uses Sweet Sans Pro (Secondary typeface) */
+  p,
+  span,
+  div,
+  a,
+  button,
+  input,
+  textarea,
+  label {
+    @apply font-secondary;
+  }
+
+  /* Special typography classes */
+  .text-display {
+    @apply font-primary text-5xl lg:text-6xl font-bold leading-none;
+  }
+
+  .text-hero {
+    @apply font-primary text-4xl lg:text-5xl font-bold leading-tight;
+  }
+
+  .text-subtitle {
+    @apply font-secondary text-lg lg:text-xl font-medium leading-relaxed;
+  }
+
+  .text-body {
+    @apply font-secondary text-base leading-relaxed;
+  }
+
+  .text-caption {
+    @apply font-secondary text-sm leading-normal;
+  }
+
+  .text-overline {
+    @apply font-secondary text-xs font-semibold uppercase tracking-wider;
+  }
+
+  /* Navigation and UI elements */
+  nav,
+  .nav-item {
+    @apply font-secondary font-medium;
+  }
+
+  /* Form elements */
+  .form-label {
+    @apply font-secondary text-sm font-medium;
+  }
+
+  .form-input {
+    @apply font-secondary text-base;
+  }
+
+  /* Button typography */
+  .btn {
+    @apply font-secondary font-medium;
+  }
+
+  .btn-primary {
+    @apply font-semibold;
+  }
+
+  /* Icon System - Keep AI Safe Guidelines */
+
+  /* All icons should have thin stroke (2pt max) */
+  svg {
+    stroke-width: 1.5;
+  }
+
+  /* Interface Icons - Use base colors for UI elements */
+  .icon-interface {
+    @apply text-muted-foreground;
+    stroke-width: 1.5;
+  }
+
+  .icon-interface-active {
+    @apply text-foreground;
+    stroke-width: 1.5;
+  }
+
+  .icon-interface-primary {
+    @apply text-primary;
+    stroke-width: 1.5;
+  }
+
+  /* Display Icons - Can use primary colors or gradients */
+  .icon-display {
+    stroke-width: 2;
+  }
+
+  .icon-display-primary {
+    @apply text-primary;
+    stroke-width: 2;
+  }
+
+  .icon-display-gold {
+    @apply text-gold;
+    stroke-width: 2;
+  }
+
+  .icon-display-sunrise {
+    @apply text-sunrise;
+    stroke-width: 2;
+  }
+
+  .icon-display-salmon {
+    @apply text-salmon;
+    stroke-width: 2;
+  }
+
+  .icon-display-fire {
+    @apply text-fire;
+    stroke-width: 2;
+  }
+
+  .icon-display-rose {
+    @apply text-rose;
+    stroke-width: 2;
+  }
+
+  /* Status-specific icons */
+  .icon-death {
+    @apply text-death;
+    stroke-width: 1.5;
+  }
+
+  .icon-accident {
+    @apply text-accident;
+    stroke-width: 1.5;
+  }
+
+  .icon-financial {
+    @apply text-financial;
+    stroke-width: 1.5;
+  }
+}
+
+/* Keep AI Safe Brand Color Utilities */
+@layer utilities {
+
+  /* Typography Utilities */
+  .font-primary {
+    font-family: 'Aleo', Georgia, 'Times New Roman', serif;
+  }
+
+  .font-secondary {
+    font-family: 'Sweet Sans Pro', Inter, system-ui, sans-serif;
+  }
+
+  .font-aleo {
+    font-family: 'Aleo', Georgia, 'Times New Roman', serif;
+  }
+
+  .font-sweet {
+    font-family: 'Sweet Sans Pro', Inter, system-ui, sans-serif;
+  }
+
+  /* Brand Colors */
+  .text-gold {
+    color: hsl(49 100% 59%);
+  }
+
+  .text-sunrise {
+    color: hsl(35 100% 62%);
+  }
+
+  .text-salmon {
+    color: hsl(8 87% 77%);
+  }
+
+  .text-fire {
+    color: hsl(4 86% 76%);
+  }
+
+  .text-rose {
+    color: hsl(343 82% 71%);
+  }
+
+  .bg-gold {
+    background-color: hsl(49 100% 59%);
+  }
+
+  .bg-sunrise {
+    background-color: hsl(35 100% 62%);
+  }
+
+  .bg-salmon {
+    background-color: hsl(8 87% 77%);
+  }
+
+  .bg-fire {
+    background-color: hsl(4 86% 76%);
+  }
+
+  .bg-rose {
+    background-color: hsl(343 82% 71%);
+  }
+
+  .border-gold {
+    border-color: hsl(49 100% 59%);
+  }
+
+  .border-sunrise {
+    border-color: hsl(35 100% 62%);
+  }
+
+  .border-salmon {
+    border-color: hsl(8 87% 77%);
+  }
+
+  .border-fire {
+    border-color: hsl(4 86% 76%);
+  }
+
+  .border-rose {
+    border-color: hsl(343 82% 71%);
+  }
+
+  /* Dashboard specific utilities */
+  .text-death {
+    color: hsl(4 86% 76%);
+  }
+
+  .text-accident {
+    color: hsl(8 87% 77%);
+  }
+
+  .text-financial {
+    color: hsl(343 82% 71%);
+  }
+
+  .text-statusActive {
+    color: hsl(49 100% 59%);
+  }
+
+  .bg-death {
+    background-color: hsl(4 86% 76%);
+  }
+
+  .bg-accident {
+    background-color: hsl(8 87% 77%);
+  }
+
+  .bg-financial {
+    background-color: hsl(343 82% 71%);
+  }
+
+  .border-death {
+    border-color: hsl(4 86% 76%);
+  }
+
+  .border-accident {
+    border-color: hsl(8 87% 77%);
+  }
+
+  .border-financial {
+    border-color: hsl(343 82% 71%);
+  }
+}
