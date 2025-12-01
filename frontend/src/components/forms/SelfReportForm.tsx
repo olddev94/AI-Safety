@@ -15,7 +15,7 @@ import { categories, countries } from '@/data/mockIncidents';
 const selfReportSchema = z.object({
     title: z.string().min(5, 'Title must be at least 5 characters').max(200, 'Title must be less than 200 characters'),
     description: z.string().min(20, 'Description must be at least 20 characters').max(2000, 'Description must be less than 2000 characters'),
-    severity: z.enum(['Death', 'Accident']).optional(),
+    severity: z.enum(['Fatality', 'Accident']).optional(),
     url: z.string().optional().refine((url) => {
         if (!url || url.trim() === '') return true;
         try {
@@ -142,10 +142,10 @@ export const SelfReportForm: React.FC<SelfReportFormProps> = ({ onSubmit, isSubm
                                                 </SelectTrigger>
                                             </FormControl>
                                             <SelectContent>
-                                                <SelectItem value="Death" className="text-base">
+                                                <SelectItem value="Fatality" className="text-base">
                                                     <div className="flex items-center">
                                                         <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>
-                                                        Death - Fatality occurred
+                                                        Fatality - Fatality occurred
                                                     </div>
                                                 </SelectItem>
                                                 <SelectItem value="Accident" className="text-base">
@@ -157,7 +157,7 @@ export const SelfReportForm: React.FC<SelfReportFormProps> = ({ onSubmit, isSubm
                                             </SelectContent>
                                         </Select>
                                         <FormDescription>
-                                            Indicate whether this incident resulted in death or was an accident with injuries/damage
+                                            Indicate whether this incident resulted in fatality or was an accident with injuries/damage
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>

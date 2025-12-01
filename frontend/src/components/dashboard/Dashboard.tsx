@@ -12,8 +12,10 @@ import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FileText, Database, Map, BarChart3, AlertTriangle, Shield, Code, Download } from 'lucide-react';
 import axios from 'axios';
+import { authService } from '@/services/authService';
 
 export const Dashboard = () => {
+  const user = authService.getUser();
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
     severities: [],
@@ -67,6 +69,11 @@ export const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
+              {user && (
+                <div className="text-sm text-muted-foreground mr-2">
+                  {user.name}
+                </div>
+              )}
               <Button variant="outline" size="sm" asChild>
                 <Link to="/api-docs" title="API Documentation">
                   <Code className="h-4 w-4 mr-2" />
@@ -192,12 +199,12 @@ export const Dashboard = () => {
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  {selectedIncident.severity === 'Death' ? (
+                  {selectedIncident.severity === 'Fatality' ? (
                     <div className="w-3 h-3 bg-death rounded-full"></div>
                   ) : (
                     <div className="w-3 h-3 bg-accident rounded-full"></div>
                   )}
-                  <Badge variant={selectedIncident.severity === 'Death' ? 'destructive' : 'secondary'}>
+                  <Badge variant={selectedIncident.severity === 'Fatality' ? 'destructive' : 'secondary'}>
                     {selectedIncident.severity}
                   </Badge>
                 </div>
@@ -214,7 +221,7 @@ export const Dashboard = () => {
               <p className="text-muted-foreground mb-4">{selectedIncident.description}</p>
 
               <div className="space-y-2 text-sm">
-                <div><strong>Country:</strong> {selectedIncident.country}</div>
+                <div><strong>Country:</strong> {Array.isArray(selectedIncident.country) ? selectedIncident.country.join(', ') : selectedIncident.country}</div>
                 <div><strong>Category:</strong> {selectedIncident.category}</div>
                 <div><strong>Date:</strong> {new Date(selectedIncident.pubDate).toLocaleDateString()}</div>
                 {selectedIncident.casualties && (
@@ -227,7 +234,7 @@ export const Dashboard = () => {
 
               <div className="mt-6">
                 <Button asChild>
-                  <a href={selectedIncident.link} target="_blank" rel="noopener noreferrer">
+                  <a href={selectedIncident.url} target="_blank" rel="noopener noreferrer">
                     Read Full Article
                   </a>
                 </Button>

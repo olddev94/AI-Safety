@@ -6,17 +6,30 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Shield, Eye, Check, X, Trash2, Calendar, MapPin, Tag, Edit, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Shield, Eye, Check, X, Trash2, Calendar, MapPin, Tag, Edit, AlertTriangle, LogOut } from 'lucide-react';
 import { getStoredReports, updateReportStatus, deleteReport, updateReport, SelfReportSubmission } from '@/services/adminService';
 import { EditReportForm } from '@/components/forms/EditReportForm';
+import { authService } from '@/services/authService';
+import { useNavigate } from 'react-router-dom';
 
 const Admin = () => {
+    const navigate = useNavigate();
     const [reports, setReports] = useState<SelfReportSubmission[]>([]);
     const [selectedReport, setSelectedReport] = useState<SelfReportSubmission | null>(null);
     const [editingReport, setEditingReport] = useState<SelfReportSubmission | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
+    const user = authService.getUser();
+
+    const handleLogout = () => {
+        authService.clearUser();
+        toast({
+            title: 'Logged Out',
+            description: 'You have been successfully logged out.',
+        });
+        navigate('/');
+    };
 
     // Load reports on component mount
     useEffect(() => {
@@ -172,6 +185,24 @@ const Admin = () => {
                                 Back to Dashboard
                             </Link>
                         </Button>
+                        {user && (
+                            <div className="flex items-center gap-3">
+                                {user.picture && (
+                                    <img 
+                                        src={user.picture} 
+                                        alt={user.name}
+                                        className="w-8 h-8 rounded-full border border-border"
+                                    />
+                                )}
+                                <div className="text-sm font-medium">
+                                    {user.name}
+                                </div>
+                                <Button variant="outline" size="sm" onClick={handleLogout}>
+                                    <LogOut className="h-4 w-4 mr-2" />
+                                    Logout
+                                </Button>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-3">
                         <Shield className="h-8 w-8 text-blue-600" />
@@ -269,7 +300,7 @@ const Admin = () => {
                                             <TableCell>
                                                 <div className="flex items-center gap-1">
                                                     <MapPin className="h-3 w-3 text-muted-foreground" />
-                                                    {report.country}
+                                                    {Array.isArray(report.country) ? report.country.join(', ') : report.country}
                                                 </div>
                                             </TableCell>
                                             <TableCell>
@@ -322,7 +353,7 @@ const Admin = () => {
                                                                     <div className="grid grid-cols-2 gap-4">
                                                                         <div>
                                                                             <h4 className="font-medium mb-2">Country</h4>
-                                                                            <p className="text-sm">{selectedReport.country}</p>
+                                                                            <p className="text-sm">{Array.isArray(selectedReport.country) ? selectedReport.country.join(', ') : selectedReport.country}</p>
                                                                         </div>
                                                                         <div>
                                                                             <h4 className="font-medium mb-2">Category</h4>

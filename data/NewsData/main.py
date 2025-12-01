@@ -57,7 +57,7 @@ def fetch_articles(start_date, end_date):
                     continue
                 articles.append({
                     "title": art.get("title", ""),
-                    "link": art.get("link", ""),
+                    "url": art.get("link", ""),
                     "description": art.get("description", ""),
                     "content": art.get("content", ""),
                     "pubDate": art.get("pubDate", ""),
@@ -92,26 +92,27 @@ def save_to_pg(articles):
     )
     cur = conn.cursor()
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS articles (
+        CREATE TABLE IF NOT EXISTS news (
             id SERIAL PRIMARY KEY,
             title TEXT,
-            link TEXT UNIQUE,
+            url TEXT UNIQUE,
             description TEXT,
             content TEXT,
             pubDate DATE,
             country TEXT[],
-            category TEXT
+            category TEXT,
+            severity TEXT
         );
     """)
 
     for art in articles:
         cur.execute("""
-            INSERT INTO articles (title, link, description, content, pubDate, country, category)
+            INSERT INTO news (title, url, description, content, pubDate, country, category)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (link) DO NOTHING;
+            ON CONFLICT (url) DO NOTHING;
         """, (
             art.get("title"),
-            art.get("link"),
+            art.get("url"),
             art.get("description"),
             art.get("content"),
             art.get("pubDate"),

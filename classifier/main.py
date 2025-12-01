@@ -204,14 +204,28 @@ def get_pg_connection():
 def save_category_articles(articles, categories):
     conn = get_pg_connection()
     cur = conn.cursor()
-    # Batch update all articles in one operation, no need for a for loop
-
+    
+    # Ensure severity column exists
+    cur.execute("""
+        ALTER TABLE news 
+        ADD COLUMN IF NOT EXISTS severity TEXT;
+    """)
+    
+    # Batch update all articles in one operation, extracting severity from category
     update_tuples = [(category, article["id"]) for article, category in zip(articles, categories)]
     if update_tuples:
         execute_values(
             cur,
             """
-            UPDATE articles AS a SET category = data.category
+            UPDATE news AS a 
+            SET category = data.category,
+                severity = CASE 
+                    WHEN data.category LIKE '%/Death' THEN 'Fatality'
+                    WHEN data.category LIKE '%/Accident' THEN 'Accident'
+                    WHEN data.category LIKE '%Death%' AND data.category NOT LIKE '%/%' THEN 'Fatality'
+                    WHEN data.category LIKE '%Accident%' AND data.category NOT LIKE '%/%' THEN 'Accident'
+                    ELSE NULL
+                END
             FROM (VALUES %s) AS data(category, id)
             WHERE a.id = data.id;
             """,
@@ -226,8 +240,8 @@ def load_articles():
     conn = get_pg_connection()
     cur = conn.cursor()
     cur.execute("""
-        SELECT id, title, link, description, content, pubDate, country, category
-        FROM articles
+        SELECT id, title, url, description, content, pubDate, country, category
+        FROM news
         WHERE category IS NULL OR category = '' OR category = 'N/A'
         LIMIT %s;
     """, (DB_FETCH_LIMIT,))
@@ -236,7 +250,7 @@ def load_articles():
         articles.append({
             "id": row[0],
             "title": row[1],
-            "link": row[2],
+            "url": row[2],
             "description": row[3],
             "content": row[4],
             "pubDate": row[5],

@@ -24,7 +24,7 @@ export const FilterSidebar = ({ filters, onFiltersChange, activeFiltersCount, da
     onFiltersChange({ ...filters, categories: updatedCategories });
   };
 
-  const handleSeverityChange = (severity: 'Death' | 'Accident', checked: boolean) => {
+  const handleSeverityChange = (severity: 'Fatality' | 'Accident', checked: boolean) => {
     const updatedSeverities = checked
       ? [...filters.severities, severity]
       : filters.severities.filter(s => s !== severity);
@@ -97,7 +97,7 @@ export const FilterSidebar = ({ filters, onFiltersChange, activeFiltersCount, da
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {(['Death', 'Accident'] as const).map((severity) => (
+          {(['Fatality', 'Accident'] as const).map((severity) => (
             <div key={severity} className="flex items-center space-x-2">
               <Checkbox
                 id={severity}

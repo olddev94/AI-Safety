@@ -145,28 +145,58 @@ async def get_article_statistics(req: Request):
         conn = get_pg_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
-        stats_query = """SELECT
-                COUNT(*) AS total_incidents,
-                COUNT(*) FILTER (WHERE category LIKE '%Death') AS total_deaths,
-                COUNT(*) FILTER (WHERE category LIKE '%Accident') AS total_accidents,
-                COUNT(*) FILTER (WHERE pubDate::date = CURRENT_DATE) AS today_incidents
-            FROM
-                articles
-            WHERE category IS NOT NULL AND category != '' AND category != 'N/A'
-            AND category <> 'N/A';"""
-        cur.execute(stats_query)
-        rows = cur.fetchall()
-        stats = dict(rows[0])
-        print ("#####", stats)
-
+        # Ensure severity, content, and image_url columns exist
+        cur.execute("""
+            ALTER TABLE news 
+            ADD COLUMN IF NOT EXISTS severity TEXT;
+        """)
+        cur.execute("""
+            ALTER TABLE news 
+            ADD COLUMN IF NOT EXISTS content TEXT;
+        """)
+        cur.execute("""
+            ALTER TABLE news 
+            ADD COLUMN IF NOT EXISTS image_url TEXT;
+        """)
+        
+        # Copy image_url from articles table if it exists and news.image_url is NULL
+        cur.execute("""
+            UPDATE news n
+            SET image_url = a.image_url
+            FROM articles a
+            WHERE n.id = a.id 
+            AND n.image_url IS NULL 
+            AND a.image_url IS NOT NULL;
+        """)
+        
+        # Update severity from category if it's NULL (extract part after '/')
+        cur.execute("""
+            UPDATE news 
+            SET severity = CASE 
+                WHEN category LIKE '%/Death' THEN 'Fatality'
+                WHEN category LIKE '%/Accident' THEN 'Accident'
+                WHEN category LIKE '%Death%' AND category NOT LIKE '%/%' THEN 'Fatality'
+                WHEN category LIKE '%Accident%' AND category NOT LIKE '%/%' THEN 'Accident'
+                ELSE NULL
+            END
+            WHERE severity IS NULL AND category IS NOT NULL AND category != '' AND category != 'N/A';
+        """)
+        conn.commit()
+        
+        # Build filter conditions first
         severity_query = ''
         date_query = ''
         category_query = ''
         country_query = ''
+        base_where = "WHERE category IS NOT NULL AND category != '' AND category != 'N/A' AND category <> 'N/A'"
 
-        severity_query = ' OR '.join(list(map(lambda severity: f"category LIKE '%{severity}'", list(filters.get("severities", [])))))
-        if severity_query:
-            severity_query = f" AND ({severity_query})"
+        # Filter by severity field directly
+        if filters.get("severities", []):
+            severity_conditions = []
+            for severity in filters.get("severities", []):
+                severity_conditions.append(f"severity = '{severity}'")
+            if severity_conditions:
+                severity_query = f" AND ({' OR '.join(severity_conditions)})"
 
         if filters.get("dateRange", {}).get("start") and filters.get("dateRange", {}).get("end"):
             date_query = f" AND pubDate BETWEEN '{filters.get('dateRange', {}).get('start')}' AND '{filters.get('dateRange', {}).get('end')}'"
@@ -181,18 +211,45 @@ async def get_article_statistics(req: Request):
         if category_query:
             category_query = f" AND ({category_query})"
 
-        country_query = ' OR '.join(list(map(lambda country: f"c.country LIKE '{country.lower()}%'", filters.get("countries", []))))
-        if country_query:
-            country_query = f" AND ({country_query})"
+        # For country filter in stats query, we need to check if any country in the array matches
+        if filters.get("countries", []):
+            country_conditions = []
+            for country in filters.get("countries", []):
+                # Check if the country (case-insensitive) exists in the country array
+                # Using array_to_string with lower for case-insensitive matching
+                country_conditions.append(f"LOWER(array_to_string(country, ',')) LIKE LOWER('%{country}%')")
+            if country_conditions:
+                country_query = f" AND ({' OR '.join(country_conditions)})"
         
-        print ("!!", severity_query, date_query, category_query, country_query)
+        # Build stats query with filters applied
+        stats_query = f"""SELECT
+                COUNT(*) AS total_incidents,
+                COUNT(*) FILTER (WHERE severity = 'Fatality') AS total_deaths,
+                COUNT(*) FILTER (WHERE severity = 'Accident') AS total_accidents,
+                COUNT(*) FILTER (WHERE pubDate::date = CURRENT_DATE) AS today_incidents
+            FROM
+                news
+            {base_where} {severity_query} {date_query} {category_query} {country_query}"""
+        cur.execute(stats_query)
+        rows = cur.fetchall()
+        stats = dict(rows[0])
+        print ("#####", stats)
+
+        # Country query for the counts query (using LATERAL join)
+        country_query_lateral = ''
+        if filters.get("countries", []):
+            country_conditions_lateral = ' OR '.join(list(map(lambda country: f"c.country LIKE '{country.lower()}%'", filters.get("countries", []))))
+            if country_conditions_lateral:
+                country_query_lateral = f" AND ({country_conditions_lateral})"
+        
+        print ("!!", severity_query, date_query, category_query, country_query_lateral)
         query = f"""
             SELECT c.country, COUNT(*)
-            FROM articles a
+            FROM news a
             JOIN LATERAL
                 unnest(a.country) AS c(country)
                 ON TRUE
-            WHERE 1=1 {severity_query} {date_query} {category_query} {country_query} AND c.country IS NOT NULL AND category IS NOT NULL AND category <> 'N/A' AND category != ''
+            {base_where} {severity_query} {date_query} {category_query} {country_query_lateral} AND c.country IS NOT NULL
             GROUP BY c.country
         """
         print (query)
@@ -201,10 +258,10 @@ async def get_article_statistics(req: Request):
         counts = rows
 
         articles_query = f"""
-            SELECT title, link, description, pubDate, country, category
-            FROM articles
-            WHERE 1=1 {severity_query} {date_query} {category_query} AND country IS NOT NULL AND category IS NOT NULL AND category <> 'N/A' AND category != ''
-            ORDER BY id DESC
+            SELECT id, title, url, description, pubDate AS "pubDate", country, category, content, severity, image_url
+            FROM news
+            {base_where} {severity_query} {date_query} {category_query} {country_query} AND country IS NOT NULL
+            ORDER BY pubDate DESC
             LIMIT 50
         """
         cur.execute(articles_query)
@@ -212,21 +269,13 @@ async def get_article_statistics(req: Request):
         
         category_count_query = f"""
             SELECT 
-                LEFT(category, POSITION('/' IN category) - 1) AS base_category, 
+                category AS base_category, 
                 COUNT(*) AS article_count
             FROM 
-                articles
-            WHERE 
-                1=1 
-                {severity_query}
-                {date_query}
-                {category_query}
-                AND country IS NOT NULL
-                AND category IS NOT NULL
-                AND category <> 'N/A'
-                AND category != ''
+                news
+            {base_where} {severity_query} {date_query} {category_query} {country_query} AND country IS NOT NULL
             GROUP BY 
-                base_category
+                category
             ORDER BY 
                 article_count DESC;
         """
@@ -235,61 +284,38 @@ async def get_article_statistics(req: Request):
 
         severity_count_query = f"""
             SELECT
-                SUM(CASE WHEN category LIKE '%Death' THEN 1 ELSE 0 END) AS death,
-                SUM(CASE WHEN category LIKE '%Accident' THEN 1 ELSE 0 END) AS accident
+                COUNT(*) FILTER (WHERE severity = 'Fatality') AS death,
+                COUNT(*) FILTER (WHERE severity = 'Accident') AS accident
             FROM
-                articles
-            WHERE
-                1=1
-                {severity_query}
-                {date_query}
-                {category_query}
-                AND country IS NOT NULL
-                AND category IS NOT NULL
-                AND category <> 'N/A'
-                AND category != '';
+                news
+            {base_where} {severity_query} {date_query} {category_query} {country_query} AND country IS NOT NULL;
         """
         cur.execute(severity_count_query)
         severity_counts = cur.fetchall()
 
 
+        # Get the last update time from the most recent article in the news table
+        last_update_query = """
+            SELECT MAX(pubDate) as last_update
+            FROM news
+            WHERE category IS NOT NULL AND category != '' AND category != 'N/A'
+        """
+        cur.execute(last_update_query)
+        last_update_result = cur.fetchone()
+        
+        latest_cron_datetime = None
+        if last_update_result and last_update_result.get('last_update'):
+            # Convert date to datetime for consistency
+            from datetime import datetime
+            last_update_date = last_update_result['last_update']
+            if isinstance(last_update_date, datetime):
+                latest_cron_datetime = last_update_date.isoformat()
+            else:
+                # If it's a date object, convert to datetime at midnight
+                latest_cron_datetime = datetime.combine(last_update_date, datetime.min.time()).isoformat()
+        
         cur.close()
         conn.close()
-
-
-        # INSERT_YOUR_CODE
-        import os
-
-        cron_log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'cron_log.txt')
-        latest_cron_time = None
-        try:
-            with open(cron_log_path, 'r') as f:
-                lines = f.readlines()
-                # Find the last non-empty line
-                for line in reversed(lines):
-                    line = line.strip()
-                    if not line:
-                        continue
-                    # Example line: Scraped 189 blogs at 2025-09-22 10:20:02.668257
-                    if " at " in line:
-                        latest_cron_time = line.split(" at ")[-1]
-                        break
-        except Exception as e:
-            print(f"Could not read cron_log.txt: {e}")
-            latest_cron_time = None
-        # INSERT_YOUR_CODE
-        from datetime import datetime, timedelta
-
-        latest_cron_datetime = None
-        if latest_cron_time:
-            try:
-                latest_cron_datetime = datetime.strptime(latest_cron_time, "%Y-%m-%d %H:%M:%S.%f") + timedelta(hours=2)
-            except Exception as e:
-                print(f"Could not parse latest_cron_time: {e}")
-                latest_cron_datetime = None
-        
-        if latest_cron_datetime:
-            latest_cron_datetime = latest_cron_datetime.replace(minute=0, second=0, microsecond=0)
 
         return {
             "stats": stats,
@@ -303,6 +329,111 @@ async def get_article_statistics(req: Request):
     except Exception as e:
         print (e)
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
+@app.get("/news/{news_id}")
+async def get_news_detail(news_id: int):
+    """
+    Get detailed information about a specific news article
+    """
+    try:
+        conn = get_pg_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Ensure severity and content columns exist
+        cur.execute("""
+            ALTER TABLE news 
+            ADD COLUMN IF NOT EXISTS severity TEXT;
+        """)
+        cur.execute("""
+            ALTER TABLE news 
+            ADD COLUMN IF NOT EXISTS content TEXT;
+        """)
+        
+        # Ensure image_url column exists
+        cur.execute("""
+            ALTER TABLE news 
+            ADD COLUMN IF NOT EXISTS image_url TEXT;
+        """)
+        
+        # Fetch the news article
+        query = """
+            SELECT id, title, url, description, content, pubDate AS "pubDate", country, category, severity, image_url
+            FROM news
+            WHERE id = %s
+        """
+        cur.execute(query, (news_id,))
+        article = cur.fetchone()
+        
+        if not article:
+            cur.close()
+            conn.close()
+            raise HTTPException(status_code=404, detail="News article not found")
+        
+        # Get relevant articles based on title keywords and category
+        # Extract keywords from title (words longer than 3 characters)
+        title_words = [word.lower() for word in article['title'].split() if len(word) > 3]
+        
+        # Build the query with proper parameterization
+        if title_words:
+            # Build ILIKE conditions with parameters
+            title_conditions = []
+            title_params = []
+            for word in title_words[:5]:  # Limit to 5 keywords
+                title_conditions.append("title ILIKE %s")
+                title_params.append(f'%{word}%')
+            
+            # Build query with title conditions
+            title_where = ' OR '.join(title_conditions)
+            relevant_query = f"""
+                SELECT id, title, url, description, pubDate AS "pubDate", country, category, severity, image_url
+                FROM news
+                WHERE id != %s
+                AND category IS NOT NULL 
+                AND category != '' 
+                AND category != 'N/A'
+                AND (
+                    category = %s
+                    OR ({title_where})
+                )
+                ORDER BY 
+                    CASE WHEN category = %s THEN 1 ELSE 2 END,
+                    pubDate DESC
+                LIMIT 5
+            """
+            # Combine all parameters: news_id, category (for WHERE), title_params, category (for ORDER BY)
+            params = (news_id, article['category']) + tuple(title_params) + (article['category'],)
+            cur.execute(relevant_query, params)
+        else:
+            # If no keywords, just match by category
+            relevant_query = """
+                SELECT id, title, url, description, pubDate AS "pubDate", country, category, severity, image_url
+                FROM news
+                WHERE id != %s
+                AND category IS NOT NULL 
+                AND category != '' 
+                AND category != 'N/A'
+                AND category = %s
+                ORDER BY pubDate DESC
+                LIMIT 5
+            """
+            cur.execute(relevant_query, (news_id, article['category']))
+        
+        relevant_articles = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        result = dict(article)
+        result['relevant_articles'] = [dict(art) for art in relevant_articles]
+        
+        return result
+        
+    except psycopg2.Error as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 # Admin endpoints for managing manual reports
 @app.get("/admin/reports")

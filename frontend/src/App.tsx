@@ -10,7 +10,9 @@ import SelfReport from "./pages/SelfReport";
 import Admin from "./pages/Admin";
 import ApiDocs from "./pages/ApiDocs";
 import CsvSubscription from "./pages/CsvSubscription";
+import NewsDetail from "./pages/NewsDetail";
 import NotFound from "./pages/NotFound";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -24,10 +26,11 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/typography" element={<Typography />} />
           <Route path="/icons" element={<Icons />} />
-          <Route path="/self-report" element={<SelfReport />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/self-report" element={<ProtectedRoute><SelfReport /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/api-docs" element={<ApiDocs />} />
           <Route path="/csv-subscription" element={<CsvSubscription />} />
+          <Route path="/news/:id" element={<NewsDetail />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
